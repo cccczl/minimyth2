@@ -38,7 +38,7 @@ def log(str):
     localtime = time.localtime(now)
     milliseconds = '%03d' % int((now - int(now)) * 1000)
     timestamp = time.strftime('%H:%M:%S', localtime) + "." + milliseconds
-    print (timestamp + " " + str)
+    print(f"{timestamp} {str}")
 
 
 log("SIP Telephony Daemon v3.4 (c) Piotr Oniszczuk\n")
@@ -56,14 +56,14 @@ def LoadConfig( cfg_file ):
             b = x[1]
             config[a] = b
             if debug:
-                print (cfg_file + ": " + a + "=" + b)
+                print(f"{cfg_file}: {a}={b}")
     return config;
 
 def SendOSDNotify( title, origin, description, extra, image, progress_text, progress, timeout, style, fe_ip ):
     msg = "<mythnotification version=\"1\"><image>"+image+"</image><text>"+title+"</text><origin>"+origin+"</origin><description>"+description+"</description><extra>"+extra+"</extra><progress_text>"+progress_text+"</progress_text><progress>"+progress+"</progress><timeout>"+timeout+"</timeout>"
     if style:
-        msg = msg + "<style>" + style + "</style>"
-    msg = msg + "</mythnotification>"
+        msg = f"{msg}<style>{style}</style>"
+    msg = f"{msg}</mythnotification>"
     fe_port = 6948
     if debug:
         print ("UDP target IP:", fe_ip)
@@ -86,8 +86,7 @@ def TelnetCmdToFE(cmd):
         log("Telent to FE already opened...")
 
     tn.write(bytes(cmd, 'ascii'))
-    loc = tn.read_until(b'#')
-    return loc;
+    return tn.read_until(b'#')
 
 def CloseTelnet():
     global tn,telnet_opened
@@ -107,7 +106,6 @@ def jump_to_main_menu():
 config = LoadConfig(config_cfg)
 
 log_level                    = int(config["log_level"])
-sip_registrar                = config["sip_registrar"]
 user                         = config["user"]
 password                     = config["password"]
 voicemail_ann                = config["voicemail_ann"]
@@ -135,6 +133,7 @@ end_call_image               = config["end_call_image"]
 end_call_osd_timeout         = config["end_call_osd_timeout"]
 end_call_osd_style           = config["end_call_osd_style"]
 tmo_mainmenu_begin_call      = float(config["tmo_mainmenu_begin_call"])
+sip_registrar = config["sip_registrar"]
 sip_domain                   = sip_registrar
 
 fe_query_location            = "query location\n"
@@ -147,31 +146,31 @@ fe_audio_playback_restart_cmd = "jump playmusic\n"
 fe_jump_to_mainmenu          = "jump mainmenu\n"
 
 print ("Current config:")
-print ("  -user               : " + user)
-print ("  -password           : " + password)
-print ("  -SIP registrar      : " + sip_registrar)
-print ("  -Audio Dev. IN      : " + str(audio_dev_in))
-print ("  -Audio Dev. OUT     : " + str(audio_dev_out))
-print ("  -Voicemail ann.     : " + voicemail_ann)
-print ("  -Voicemail rec.dir. : " + voicemail_recording_dir)
-print ("  -Phonebook pic.dir. : " + phonebook_pictures_dir)
-print ("  -Disable VAD        : " + str(no_vad))
+print(f"  -user               : {user}")
+print(f"  -password           : {password}")
+print(f"  -SIP registrar      : {sip_domain}")
+print(f"  -Audio Dev. IN      : {audio_dev_in}")
+print(f"  -Audio Dev. OUT     : {audio_dev_out}")
+print(f"  -Voicemail ann.     : {voicemail_ann}")
+print(f"  -Voicemail rec.dir. : {voicemail_recording_dir}")
+print(f"  -Phonebook pic.dir. : {phonebook_pictures_dir}")
+print(f"  -Disable VAD        : {no_vad}")
 if channel_count != -1:
-    print ("  -Channel count      : " + str(channel_count))
+    print(f"  -Channel count      : {channel_count}")
 if snd_clock_rate != -1:
-    print ("  -Sound CLK.rate     : " + str(snd_clock_rate))
+    print(f"  -Sound CLK.rate     : {snd_clock_rate}")
 if ptime != -1:
-    print ("  -pTime              : " + str(ptime))
+    print(f"  -pTime              : {ptime}")
 if echo_cancel_type != -1:
-    print ("  -Echo Cancel Type   : " + str(echo_cancel_type))
+    print(f"  -Echo Cancel Type   : {echo_cancel_type}")
 if echo_cancel_tail != -1:
-    print ("  -Echo Cancel Tail   : " + str(echo_cancel_tail))
+    print(f"  -Echo Cancel Tail   : {echo_cancel_tail}")
 print (" ")
 
-for filePath in glob.glob(semaphores_path + "/*.sem"):
+for filePath in glob.glob(f"{semaphores_path}/*.sem"):
     if os.path.isfile(filePath):
         if debug:
-          log("Deleting semaphore:" + filePath)
+            log(f"Deleting semaphore:{filePath}")
         os.remove(filePath)
 
 def log_cb(level, str, len):
@@ -188,9 +187,8 @@ class MyAccountCallback(pj.AccountCallback):
         self.sem.acquire()
 
     def on_reg_state(self):
-        if self.sem:
-            if self.account.info().reg_status >= 200:
-                self.sem.release()
+        if self.sem and self.account.info().reg_status >= 200:
+            self.sem.release()
 
     def on_incoming_call(self, call):
         global current_call, fe_is_paused, phone, start_time
@@ -199,7 +197,7 @@ class MyAccountCallback(pj.AccountCallback):
             call.answer(486, "Busy")
             return
 
-        log("Incoming call from:" + call.info().remote_uri)
+        log(f"Incoming call from:{call.info().remote_uri}")
         if not interactive:
             log("Put pickup.sem to answer or hangup.sem to hangup...")
 
@@ -213,22 +211,46 @@ class MyAccountCallback(pj.AccountCallback):
         uri = call.info().remote_uri
         phone = re.sub('<|>|\s|sip:|@.*', "", uri)
 
-        if os.path.isfile(phonebook_pictures_dir + "/" + phone + ".picture"):
-            log("Found phonebook picture for:" + phone + " Will use:" + phonebook_pictures_dir + "/" + phone + ".picture" )
-            SendOSDNotify( "TELEFON...", "Przychodzące Połączenie", "Tel: "+phone, "[1]:Rozmowa [2/3]:Voice-mail [4]:Odrzuć/Zakończ", phonebook_pictures_dir + "/" + phone + ".picture", "", "", incoming_call_osd_timeout, incoming_call_osd_style_pic, "127.0.0.1" )
+        if os.path.isfile(f"{phonebook_pictures_dir}/{phone}.picture"):
+            log(
+                f"Found phonebook picture for:{phone} Will use:{phonebook_pictures_dir}/{phone}.picture"
+            )
+            SendOSDNotify(
+                "TELEFON...",
+                "Przychodzące Połączenie",
+                f"Tel: {phone}",
+                "[1]:Rozmowa [2/3]:Voice-mail [4]:Odrzuć/Zakończ",
+                f"{phonebook_pictures_dir}/{phone}.picture",
+                "",
+                "",
+                incoming_call_osd_timeout,
+                incoming_call_osd_style_pic,
+                "127.0.0.1",
+            )
         else:
-            log("Phonebook picture:" + phonebook_pictures_dir + "/" + phone + ".picture not found!" )
-            SendOSDNotify( "TELEFON...", "Przychodzące Połączenie", "Tel: "+phone, "[1]:Rozmowa [2/3]:Voice-mail [4]:Odrzuć/Zakończ", incomming_call_image, "", "", incoming_call_osd_timeout, incoming_call_osd_style, "127.0.0.1" )
+            log(f"Phonebook picture:{phonebook_pictures_dir}/{phone}.picture not found!")
+            SendOSDNotify(
+                "TELEFON...",
+                "Przychodzące Połączenie",
+                f"Tel: {phone}",
+                "[1]:Rozmowa [2/3]:Voice-mail [4]:Odrzuć/Zakończ",
+                incomming_call_image,
+                "",
+                "",
+                incoming_call_osd_timeout,
+                incoming_call_osd_style,
+                "127.0.0.1",
+            )
 
         loc = TelnetCmdToFE(fe_query_location)
         if debug:
-            log("FE query loc.returns:" + loc)
+            log(f"FE query loc.returns:{loc}")
 
-        result = re.search("Playback LiveTV|Playback Recorded|Playback Video|Playback DVD", loc)
-        if result:
+        if result := re.search(
+            "Playback LiveTV|Playback Recorded|Playback Video|Playback DVD", loc
+        ):
             log("FE is in video playback. Checking state...")
-            state = re.search("pause", loc)
-            if state:
+            if state := re.search("pause", loc):
                 log("FE is paused...")
                 fe_is_paused = 0
             else:
@@ -236,18 +258,17 @@ class MyAccountCallback(pj.AccountCallback):
                 fe_is_paused = 1
                 TelnetCmdToFE(fe_video_playback_pause_cmd)
 
-        result = re.search("playlistview|playlisteditorview|streamview|visualizerview", loc)
-        if result:
+        if result := re.search(
+            "playlistview|playlisteditorview|streamview|visualizerview", loc
+        ):
             log("FE is in music playback. Checking state...")
             loc = TelnetCmdToFE(fe_music_status)
-            state = re.search("PAUSED", loc)
-            if state:
+            if state := re.search("PAUSED", loc):
                 log("FE is paused...")
-                fe_is_paused = 2
             else:
                 log("FE is playing audio. Pausing playback...")
-                fe_is_paused = 2
                 TelnetCmdToFE(fe_audio_playback_pause_cmd)
+            fe_is_paused = 2
 
 
 class MyCallCallback(pj.CallCallback):
@@ -258,7 +279,9 @@ class MyCallCallback(pj.CallCallback):
 
     def on_state(self):
         global current_call, fe_is_paused, phone, recorder_id, start_time
-        log("Call_with=" + self.call.info().remote_uri + ", Call_state=" + self.call.info().state_text + ", Last_code=" + str(self.call.info().last_code) + "(" + self.call.info().last_reason + ")")
+        log(
+            f"Call_with={self.call.info().remote_uri}, Call_state={self.call.info().state_text}, Last_code={str(self.call.info().last_code)}({self.call.info().last_reason})"
+        )
 
         if self.call.info().state == pj.CallState.DISCONNECTED:
             current_call = None
@@ -266,8 +289,19 @@ class MyCallCallback(pj.CallCallback):
             call_duration = time.time() - start_time
             call_duration = '%.1f' % call_duration
 
-            log("Current call is:" + str(current_call))
-            SendOSDNotify( "TELEFON...","", "Zakończono Połączenie", "Czas trwania: "+str(call_duration)+"sek.", end_call_image,"","", end_call_osd_timeout, end_call_osd_style, "127.0.0.1" )
+            log(f"Current call is:{str(current_call)}")
+            SendOSDNotify(
+                "TELEFON...",
+                "",
+                "Zakończono Połączenie",
+                f"Czas trwania: {str(call_duration)}sek.",
+                end_call_image,
+                "",
+                "",
+                end_call_osd_timeout,
+                end_call_osd_style,
+                "127.0.0.1",
+            )
 
             if (fe_is_paused == 1):
                 log("FE was paused. Resuming video playback...")
