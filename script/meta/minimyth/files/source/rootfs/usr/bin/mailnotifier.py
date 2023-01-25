@@ -28,16 +28,21 @@ argc = len(sys.argv)
 if argc < 2:
     sleep = "60"
     if debug:
-        print("Check period is:" + sleep + "sec.\n")
+        print(f"Check period is:{sleep}" + "sec.\n")
 else:
     sleep = sys.argv[1]
     if debug:
-        print("Check period is:" + sleep + "sec.\n\nInitial delaying of check by " + sleep + "sec.\n")
+        print(
+            f"Check period is:{sleep}"
+            + "sec.\n\nInitial delaying of check by "
+            + sleep
+            + "sec.\n"
+        )
     time.sleep(int(sleep))
 
 current_mails = defaultdict(int)
 
-def send_osd (IP, TITLE, ORIGIN, DESCRIPTION, EXTRA, IMAGE, PROGRESS_TEXT, PROGRESS, TIMEOUT, STYLE):
+def send_osd(IP, TITLE, ORIGIN, DESCRIPTION, EXTRA, IMAGE, PROGRESS_TEXT, PROGRESS, TIMEOUT, STYLE):
 
     PORT = 6948
 
@@ -51,9 +56,9 @@ def send_osd (IP, TITLE, ORIGIN, DESCRIPTION, EXTRA, IMAGE, PROGRESS_TEXT, PROGR
         "<progress>"      + PROGRESS      + "</progress>\n" + \
         "<timeout>"       + TIMEOUT       + "</timeout>\n"
     if STYLE:
-        MESSAGE = MESSAGE + "<style>" + STYLE + "</style>\n"
+        MESSAGE = f"{MESSAGE}<style>{STYLE}" + "</style>\n"
 
-    MESSAGE = MESSAGE + "</mythnotification>"
+    MESSAGE = f"{MESSAGE}</mythnotification>"
 
     if debug:
         print("OSD_notify:")

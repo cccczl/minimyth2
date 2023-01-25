@@ -60,7 +60,7 @@ def browser(args):
     p1.wait()
     windows = p1.stdout.readline().split()
     for window in windows:
-        print ("'%s'" % window)
+        print(f"'{window}'")
         subprocess.Popen(["xdotool", "windowfocus", str(window)])
         print ("Asking google chrome to exit by ctrl+shift+q....")
         subprocess.Popen(["xdotool", "key", "ctrl+shift+q"])
@@ -68,7 +68,7 @@ def browser(args):
     # If we found windows and they're still running, wait 3 seconds
     if len(windows) != 0 and browser.poll() is None:
         print ("Still waiting 3sec for eiting google chrome....")
-        for i in range(30):
+        for _ in range(30):
             time.sleep(.1)
             if browser.poll() is not None:
                 break
